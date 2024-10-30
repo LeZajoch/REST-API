@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, abort
+from flask import Flask, jsonify, request, abort, render_template
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 from flask_cors import CORS
@@ -14,6 +14,12 @@ app.config['MYSQL_PASSWORD'] = 'admin'
 app.config['MYSQL_DB'] = 'blog_db'
 
 mysql = MySQL(app)
+
+#homepage render
+@app.route('/')
+def home():
+    return render_template("index.html")
+
 
 #test připojení k mysql
 @app.route('/test-db')
