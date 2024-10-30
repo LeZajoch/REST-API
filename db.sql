@@ -1,0 +1,9 @@
+CREATE DATABASE blog_db;
+USE blog_db;
+
+CREATE TABLE blog_post (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    author VARCHAR(100) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

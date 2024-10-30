@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog API Interface</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .post { border: 1px solid #ddd; padding: 10px; margin: 10px 0; }
+        .form-group { margin-bottom: 10px; }
+        button { padding: 5px 10px; }
+    </style>
+</head>
+<body>
+    <h1>Blog API Interface</h1>
+
+    <!-- Formulář pro vytvoření nového příspěvku -->
+    <h2>Create New Post</h2>
+    <div class="form-group">
+        <label for="author">Author:</label>
+        <input type="text" id="author" required>
+    </div>
+    <div class="form-group">
+        <label for="content">Content:</label>
+        <textarea id="content" required></textarea>
+    </div>
+    <button onclick="createPost()">Create Post</button>
+
+    <!-- Tlačítko pro načtení všech příspěvků -->
+    <h2>All Blog Posts</h2>
+    <button onclick="fetchPosts()">Load All Posts</button>
+    <div id="posts"></div>
+
+    <!-- Formulář pro úpravu a smazání konkrétního příspěvku -->
+    <h2>Update or Delete Post by ID</h2>
+    <div class="form-group">
+        <label for="postId">Post ID:</label>
+        <input type="number" id="postId" required>
+    </div>
+    <div class="form-group">
+        <label for="updateAuthor">New Author:</label>
+        <input type="text" id="updateAuthor">
+    </div>
+    <div class="form-group">
+        <label for="updateContent">New Content:</label>
+        <textarea id="updateContent"></textarea>
+    </div>
+    <button onclick="updatePost()">Update Post</button>
+    <button onclick="deletePost()">Delete Post</button>
+
+    <script>
+        const apiBaseUrl = 'http://127.0.0.1:5000/api/blog';
+
+        // Funkce pro vytvoření nového příspěvku
+        async function createPost() {
+            console.log("createPost function called");
+            const author = document.getElementById('author').value;
+            const content = document.getElementById('content').value;
+
+            const response = await fetch(apiBaseUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ author, content })
+            });
+
+            if (response.ok) {
+                alert("Post created successfully!");
+                document.getElementById('author').value = '';
+                document.getElementById('content').value = '';
+            } else {
+                alert("Failed to create post.");
+            }
+        }
+
+        // Funkce pro načtení všech příspěvků
+        async function fetchPosts() {
+            console.log("fetchPosts function called");
+            const response = await fetch(apiBaseUrl);
+            const posts = await response.json();
+
+            const postsDiv = document.getElementById('posts');
+            postsDiv.innerHTML = '';
+
+            posts.forEach(post => {
+                const postElement = document.createElement('div');
+                postElement.className = 'post';
+                postElement.innerHTML = `
+                    <strong>ID:</strong> ${post.id} <br>
+                    <strong>Author:</strong> ${post.author} <br>
+                    <strong>Content:</strong> ${post.content} <br>
+                    <strong>Created At:</strong> ${post.created_at} <br>
+                `;
+                postsDiv.appendChild(postElement);
+            });
+        }
+
+        // Funkce pro úpravu konkrétního příspěvku
+        async function updatePost() {
+            console.log("updatePost function called");
+            const postId = document.getElementById('postId').value;
+            const author = document.getElementById('updateAuthor').value;
+            const content = document.getElementById('updateContent').value;
+
+            const updateData = {};
+            if (author) updateData.author = author;
+            if (content) updateData.content = content;
+
+            const response = await fetch(`${apiBaseUrl}/${postId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updateData)
+            });
+
+            if (response.ok) {
+                alert("Post updated successfully!");
+                document.getElementById('updateAuthor').value = '';
+                document.getElementById('updateContent').value = '';
+            } else {
+                alert("Failed to update post.");
+            }
+        }
+
+        // Funkce pro smazání konkrétního příspěvku
+        async function deletePost() {
+            console.log("deletePost function called");
+            const postId = document.getElementById('postId').value;
+
+            const response = await fetch(`${apiBaseUrl}/${postId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                alert("Post deleted successfully!");
+            } else {
+                alert("Failed to delete post.");
+            }
+        }
+    </script>
+</body>
+</html>
