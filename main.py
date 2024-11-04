@@ -121,5 +121,28 @@ def update_blog_post(blog_id):
 
     return jsonify({"message": "Blog post updated successfully"}), 200
 
+# Endpoint pro načtení info o API
+@app.route('/api/about', methods=['GET'])
+def about():
+    """
+    Dokumentace API
+    ---
+    responses:
+      200:
+        description: Popis všech endpointů
+    """
+    return jsonify({
+        "info": "Toto API umožňuje správu blogových příspěvků.",
+        "endpoints": [
+            {"method": "POST", "endpoint": "/api/blog", "description": "Vytvoření nového příspěvku"},
+            {"method": "GET", "endpoint": "/api/blog", "description": "Načtení všech příspěvků"},
+            {"method": "PATCH", "endpoint": "/api/blog/<id>", "description": "Úprava konkrétního příspěvku"},
+            {"method": "DELETE", "endpoint": "/api/blog/<id>", "description": "Smazání konkrétního příspěvku"},
+            {"method": "GET", "endpoint": "/api/about", "description": "Zobrazení dokumentace API"}
+        ],
+        "authorization": "API zatím nevyžaduje autorizaci."
+    })
+
+
 if __name__ == '__main__':
     app.run(debug=True)
