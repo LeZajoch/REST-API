@@ -1,11 +1,18 @@
-from flask import Flask, jsonify, request, abort, render_template
+from flask import Flask, jsonify, request,  render_template, g, abort
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 from flask_cors import CORS
-from datetime import datetime
+from flask_httpauth import HTTPBasicAuth
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 CORS(app)  # Povolení CORS pro celou aplikaci
+
+# Mock databáze uživatelů pro autentizaci
+users = {
+    "admin": generate_password_hash("adminpassword"),
+    "user1": generate_password_hash("user1password")
+}
 
 # Konfigurace pro MySQL
 app.config['MYSQL_HOST'] = 'localhost'
@@ -14,8 +21,18 @@ app.config['MYSQL_PASSWORD'] = 'admin'
 app.config['MYSQL_DB'] = 'blog_db'
 
 mysql = MySQL(app)
-
+auth = HTTPBasicAuth()
+mysql = MySQL(app)
 #homepage render
+
+# Funkce pro ověření uživatele
+@auth.verify_password
+def verify_password(username, password):
+    if username in users and check_password_hash(users.get(username), password):
+        g.current_user = username
+        return True
+    return False
+
 @app.route('/')
 def home():
     return render_template("index.html")
@@ -33,13 +50,14 @@ def test_db():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-
-
-
 # Endpoint pro vytvoření nového blogového příspěvku
 @app.route('/api/blog', methods=['POST'])
+@auth.login_required
 def create_blog_post():
+    if not g.current_user:
+        return jsonify({"message": "Authorization required"}), 403
+    author = g.current_user  # Nastavíme autora na aktuálního přihlášeného uživatele
+    content = request.json.get('content')
     data = request.get_json()
     author = data.get('author')
     content = data.get('content')
@@ -93,17 +111,38 @@ def delete_blog_post(blog_id):
 
 # Endpoint pro částečný update blogového příspěvku
 @app.route('/api/blog/<int:blog_id>', methods=['PATCH'])
+@auth.login_required
 def update_blog_post(blog_id):
     data = request.get_json()
     fields = []
     values = []
 
+    # Získání informací o příspěvku z databáze
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT owner_id, visibility FROM blog_post WHERE id = %s", (blog_id,))
+    post = cursor.fetchone()
+    if not post:
+        abort(404, 'Blog post not found.')
+
+    owner_id, visibility = post
+
+    # Kontrola oprávnění - pouze vlastník nebo admin může upravit příspěvek
+    if g.current_role != 'admin' and g.current_user != owner_id:
+        abort(403, 'You are not authorized to edit this blog post.')
+
+    # Zpracování polí pro aktualizaci
     if 'author' in data:
         fields.append("author = %s")
         values.append(data['author'])
     if 'content' in data:
         fields.append("content = %s")
         values.append(data['content'])
+    if 'visibility' in data:
+        # Ujisti se, že viditelnost může být pouze 'public' nebo 'private'
+        if data['visibility'] not in ['public', 'private']:
+            abort(400, 'Invalid visibility value.')
+        fields.append("visibility = %s")
+        values.append(data['visibility'])
 
     if not fields:
         abort(400, 'No valid fields to update.')
@@ -111,13 +150,9 @@ def update_blog_post(blog_id):
     values.append(blog_id)
     query = "UPDATE blog_post SET " + ", ".join(fields) + " WHERE id = %s"
 
-    cursor = mysql.connection.cursor()
     cursor.execute(query, tuple(values))
     mysql.connection.commit()
     cursor.close()
-
-    if cursor.rowcount == 0:
-        abort(404, 'Blog post not found.')
 
     return jsonify({"message": "Blog post updated successfully"}), 200
 
