@@ -44,7 +44,7 @@ def home():
 
 
 #test připojení k mysql
-@app.route('/test-db', methods=['GET'])
+@app.route('/api/test-db', methods=['GET'])
 def test_db():
     try:
         cursor = mysql.connection.cursor()
@@ -177,7 +177,7 @@ def about():
     return jsonify({
         "info": "Toto API umožňuje správu blogových příspěvků.",
         "endpoints": [
-	    {"method": "GET", "endpoint": "/test-db", "description": "kontrola funkčnosti db"},
+	    {"method": "GET", "endpoint": "/api/test-db", "description": "kontrola funkčnosti db"},
             {"method": "POST", "endpoint": "/api/blog", "description": "Vytvoření nového příspěvku"},
             {"method": "GET", "endpoint": "/api/blog", "description": "Načtení všech příspěvků"},
             {"method": "PATCH", "endpoint": "/api/blog/<id>", "description": "Úprava konkrétního příspěvku"},
