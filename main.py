@@ -4,14 +4,9 @@ import MySQLdb.cursors
 from flask_cors import CORS
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
-import logging
-logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 CORS(app)  # Povolení CORS pro celou aplikaci
-app.config['DEBUG'] = True
-app.config['JSON_SORT_KEYS'] = False
-
 
 # Mock databáze uživatelů pro autentizaci
 users = {
@@ -20,14 +15,14 @@ users = {
 }
 
 # Konfigurace pro MySQL
-app.config['MYSQL_HOST'] = 'cit.cna044c44gnm.eu-central-1.rds.amazonaws.com'
+app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'admin'
-app.config['MYSQL_PASSWORD'] = '5HVSK4U4N'
+app.config['MYSQL_PASSWORD'] = 'admin'
 app.config['MYSQL_DB'] = 'blog_db'
-app.config['MYSQL_PORT'] = 3306
 
 mysql = MySQL(app)
 auth = HTTPBasicAuth()
+mysql = MySQL(app)
 #homepage render
 
 # Funkce pro ověření uživatele
@@ -44,7 +39,7 @@ def home():
 
 
 #test připojení k mysql
-@app.route('/api/test-db', methods=['GET'])
+@app.route('/test-db')
 def test_db():
     try:
         cursor = mysql.connection.cursor()
@@ -79,15 +74,12 @@ def create_blog_post():
     return jsonify({"id": post_id, "message": "Blog post created successfully"}), 201
 
 # Endpoint pro zobrazení všech blogových příspěvků
-@app.route('/api/blog', methods=['GET']) 
+@app.route('/api/blog', methods=['GET'])
 def get_all_blog_posts():
-    app.logger.debug("GET /api/blog called")
-    return jsonify({"message": "Blog posts retrieved"}), 200
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute("SELECT * FROM blog_post")
     blog_posts = cursor.fetchall()
     cursor.close()
-
 
     return jsonify(blog_posts), 200
 
@@ -177,7 +169,6 @@ def about():
     return jsonify({
         "info": "Toto API umožňuje správu blogových příspěvků.",
         "endpoints": [
-	    {"method": "GET", "endpoint": "/api/test-db", "description": "kontrola funkčnosti db"},
             {"method": "POST", "endpoint": "/api/blog", "description": "Vytvoření nového příspěvku"},
             {"method": "GET", "endpoint": "/api/blog", "description": "Načtení všech příspěvků"},
             {"method": "PATCH", "endpoint": "/api/blog/<id>", "description": "Úprava konkrétního příspěvku"},
@@ -189,4 +180,4 @@ def about():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True)
